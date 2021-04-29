@@ -1,97 +1,89 @@
-library ieee;
-use     ieee.std_logic_1164.all;
-use     ieee.std_logic_unsigned.all;
-use     ieee.std_logic_misc.all;
+LIBRARY ieee;
+USE ieee.std_logic_1164.ALL;
+USE ieee.std_logic_unsigned.ALL;
+USE ieee.std_logic_misc.ALL;
 
-entity czekanie is
-  generic (
-    F_ZEGARA		:natural := 20_000_000;			-- czestotliwosc zegata w [Hz]
-    L_BODOW		:natural := 9600;			-- predkosc nadawania w [bodach]
-    B_SLOWA		:natural := 8;				-- liczba bitow slowa danych (5-8)
-    B_PARZYSTOSCI	:natural := 1;				-- liczba bitow parzystosci (0-1)
-    B_STOPOW		:natural := 2;				-- liczba bitow stopu (1-2)
-    N_RX		:boolean := FALSE;			-- negacja logiczna sygnalu szeregowego
-    N_SLOWO		:boolean := FALSE			-- negacja logiczna slowa danych
-  );
-  port (
-    R		:in  std_logic;					-- sygnal resetowania
-    C		:in  std_logic;					-- zegar taktujacy
-    RX		:in  std_logic;					-- odebrany sygnal szeregowy
-    SLOWO	:out std_logic_vector(B_SLOWA-1 downto 0);	-- odebrane slowo danych
-    GOTOWE	:out std_logic;					-- flaga potwierdzenia odbioru
-    BLAD	:out std_logic					-- flaga wykrycia bledu w odbiorze
-  );
-end czekanie;
+ENTITY czekanie IS
+    GENERIC (
+        F_ZEGARA : NATURAL := 20_000_000; -- czestotliwosc zegata w [Hz]
+        L_BODOW : NATURAL := 9600; -- predkosc nadawania w [bodach]
+        B_SLOWA : NATURAL := 8; -- liczba bitow slowa danych (5-8)
+        B_PARZYSTOSCI : NATURAL := 1; -- liczba bitow parzystosci (0-1)
+        B_STOPOW : NATURAL := 2; -- liczba bitow stopu (1-2)
+        N_RX : BOOLEAN := FALSE; -- negacja logiczna sygnalu szeregowego
+        N_SLOWO : BOOLEAN := FALSE -- negacja logiczna slowa danych
+    );
+    PORT (
+        WORK : INOUT STD_LOGIC; -- sygnal czy dziala
+        C : IN STD_LOGIC; -- zegar taktujacy
+        --RX : IN STD_LOGIC; -- odebrany sygnal szeregowy
+        SLOWO : OUT STD_LOGIC_VECTOR(B_SLOWA - 1 DOWNTO 0); -- odebrane slowo danych
+        GOTOWE : OUT STD_LOGIC; -- flaga potwierdzenia odbioru
+        BLAD : OUT STD_LOGIC -- flaga wykrycia bledu w odbiorze
 
-architecture behavioural of czekanie is
+        wejscie : INOUT STD_LOGIC_VECTOR(0 TO 1); -- podwojny rejestr sygnalu RX
+        l_czasu : INOUT NATURAL RANGE 0 TO T; -- licznik czasu jednego bodu
+        l_bitow : INOUT NATURAL RANGE 0 TO B_SLOWA - 1; -- licznik odebranych bitow danych lub stopu
+        bufor : INOUT STD_LOGIC_VECTOR(SLOWO'RANGE); -- rejestr kolejno odebranych bitow danych
+        problem : INOUT STD_LOGIC; -- rejestr (flaga) wykrytego bledu odbioru
 
-    signal   wejscie	:std_logic_vector(0 to 1);		-- podwojny rejestr sygnalu RX
+        stan_czekanie : OUT STD_LOGIC;
+
+    );
+END czekanie;
+
+ARCHITECTURE behavioural OF czekanie IS
+
+    --SIGNAL wejscie : STD_LOGIC_VECTOR(0 TO 1); -- podwojny rejestr sygnalu RX
 
     --type     ETAP		is (CZEKANIE, START, DANA, PARZYSTOSC, STOP); -- lista etapow pracy odbiornika
     --signal   stan		:ETAP;					-- rejestr maszyny stanow odbiornika
-  
-    constant T		:positive := F_ZEGARA/L_BODOW-1;	-- czas jednego bodu - liczba taktów zegara
-    signal   l_czasu  	:natural range 0 to T;			-- licznik czasu jednego bodu
-    signal   l_bitow  	:natural range 0 to B_SLOWA-1;		-- licznik odebranych bitow danych lub stopu
-    
-    signal   bufor	:std_logic_vector(SLOWO'range);		-- rejestr kolejno odebranych bitow danych
-    signal   problem	:std_logic;				-- rejestr (flaga) wykrytego bledu odbioru
 
-begin
+    CONSTANT T : POSITIVE := F_ZEGARA/L_BODOW - 1; -- czas jednego bodu - liczba taktów zegara
+    --SIGNAL l_czasu : NATURAL RANGE 0 TO T; -- licznik czasu jednego bodu
+    --SIGNAL l_bitow : NATURAL RANGE 0 TO B_SLOWA - 1; -- licznik odebranych bitow danych lub stopu
 
-    process(R, C)
-    begin
-        if (R='0') then
+    --SIGNAL bufor : STD_LOGIC_VECTOR(SLOWO'RANGE); -- rejestr kolejno odebranych bitow danych
+    --SIGNAL problem : STD_LOGIC; -- rejestr (flaga) wykrytego bledu odbioru
 
-            wejscie	<= (others => '0');				-- wyzerowanie rejestru sygnalu RX
-            --stan	<= CZEKANIE;					-- poczatkowy stan pracy odbiornika
-            l_czasu  <= 0;						-- wyzerowanie licznika czasu bodu
-            l_bitow  <= 0;						-- wyzerowanie licznika odebranych bitow
-            bufor	<= (others => '0');				-- wyzerowanie bufora bitow danych
-            problem 	<= '0';						-- wyzerowanie rejestru bledu odbioru			
-            SLOWO	<= (others => '0');				-- wyzerowanie wyjsciowego slowa danych
-            GOTOWE	<= '0';						-- wyzerowanie flagi potwierdzenia odbioru
-            BLAD	<= '0';						-- wyzerowanie flagi wykrycia bledu w odbiorze
+BEGIN
 
+    PROCESS (WORK, C)
+    BEGIN
+        IF (WORK = '1') THEN
 
-        elsif (rising_edge(C)) then
+            IF (rising_edge(C)) THEN
 
-            GOTOWE     <= '0';					-- defaultowe skasowanie flagi potwierdzenia odbioru
-            BLAD       <= '0';					-- defaultowe skasowanie flagi wykrycia bledu w odbiorze
-            wejscie(0) <= RX;					-- zarejestrowanie synchroniczne stanu sygnalu RX
-            if (N_RX = TRUE) then					-- badanie warunku zanegowania sygnalu szeregowego
-                wejscie(0) <= not(RX);					-- zarejestrowanie synchroniczne zanegowanego sygnalu RX
-            end if;							-- zakonczenie instukcji warunkowej  
-            wejscie(1) <= wejscie(0);				-- zarejestrowanie dwoch kolejnych stanow sygnalu RX
+                IF (l_czasu /= T) THEN -- badanie odliczania okresu T
+                    l_czasu <= l_czasu + 1; -- zwiekszenie o 1 stanu licznika czasu
+                ELSE -- zakonczenie odliczania czasu T
+                    l_czasu <= 0; -- wyzerowanie licznika czasu bodu
 
+                    IF (l_bitow /= B_STOPOW - 1) THEN -- badanie odliczania bitow stopu
+                        l_bitow <= l_bitow + 1; -- zwiekszenie o 1 liczby bitow stopu
+                        IF (wejscie(1) /= '0') THEN -- badanie nieprawidlowego stanu bitu STOP
+                            problem <= '1'; -- ustawienie rejestru bledu odbioru
+                        END IF; -- zakonczenie instukcji warunkowej 
+                    ELSE -- zakonczenie odliczania bitow stopu
+                        IF (problem = '0' AND wejscie(1) = '0') THEN -- badanie prawidlowego odbioru szeregowego
+                            SLOWO <= bufor; -- ustawienie na wyjsciu SLOWO odebranego slowa 
+                            IF (N_SLOWO = TRUE) THEN -- badanie warunku zanegowania odebranego slowa
+                                SLOWO <= NOT(bufor); -- ustawienie na wyjsciu SLOWO odebranego slowa 
+                            END IF; -- zakonczenie instukcji warunkowej  
+                            GOTOWE <= '1'; -- ustawienie na wyjsciu flagi potwierdzenia
+                        ELSE -- wykryto nieprawidlowy odbioru szeregowy
+                            SLOWO <= (OTHERS => '0'); -- wyzerowanie wyjscia danych
+                            BLAD <= '1'; -- ustawienie na wyjsciu flagi bledu odbioru
+                        END IF; -- zakonczenie instukcji warunkowej
+                        --stan <= CZEKANIE; -- przejscie do stanu CZEKANIE
+                        stan_czekanie <= '1';
+                        WORK <= '0';
+                    END IF; -- zakonczenie instukcji warunkowej 
 
-            if (l_czasu /= T) then				-- badanie odliczania okresu T
-                l_czasu <= l_czasu + 1;				-- zwiekszenie o 1 stanu licznika czasu
-            else							-- zakonczenie odliczania czasu T
-                l_czasu <= 0;					-- wyzerowanie licznika czasu bodu
-   
-                if (l_bitow /= B_STOPOW-1) then			-- badanie odliczania bitow stopu
-                     <= l_bitow + 1;				-- zwiekszenie o 1 liczby bitow stopu
-                    if (wejscie(1) /= '0') then			-- badanie nieprawidlowego stanu bitu STOP
-                        problem <= '1';				-- ustawienie rejestru bledu odbioru
-                    end if; 						-- zakonczenie instukcji warunkowej 
-                else						-- zakonczenie odliczania bitow stopu
-                    if (problem = '0' and wejscie(1) = '0') then	-- badanie prawidlowego odbioru szeregowego
-                        SLOWO <= bufor;				-- ustawienie na wyjsciu SLOWO odebranego slowa 
-                        if (N_SLOWO = TRUE) then			-- badanie warunku zanegowania odebranego slowa
-                            SLOWO <= not(bufor);				-- ustawienie na wyjsciu SLOWO odebranego slowa 
-                        end if;					-- zakonczenie instukcji warunkowej  
-                        GOTOWE <= '1';					-- ustawienie na wyjsciu flagi potwierdzenia
-                    else						-- wykryto nieprawidlowy odbioru szeregowy
-                        SLOWO <= (others => '0');			-- wyzerowanie wyjscia danych
-                        BLAD <= '1';					-- ustawienie na wyjsciu flagi bledu odbioru
-                    end if;						-- zakonczenie instukcji warunkowej
-                    stan <= CZEKANIE;				-- przejscie do stanu CZEKANIE
-                end if;						-- zakonczenie instukcji warunkowej 
-   
-            end if;						-- zakonczenie instukcji warunkowej
+                END IF; -- zakonczenie instukcji warunkowej
+            END IF;
 
-        end if;
-    end process;  
-   
-end behavioural;
+        END IF;
+    END PROCESS;
+
+END behavioural;
