@@ -11,7 +11,9 @@ ENTITY czekanie IS
         B_PARZYSTOSCI : NATURAL := 1; -- liczba bitow parzystosci (0-1)
         B_STOPOW : NATURAL := 2; -- liczba bitow stopu (1-2)
         N_RX : BOOLEAN := FALSE; -- negacja logiczna sygnalu szeregowego
-        N_SLOWO : BOOLEAN := FALSE -- negacja logiczna slowa danych
+        N_SLOWO : BOOLEAN := FALSE; -- negacja logiczna slowa danych
+        
+        T : POSITIVE := 2082 --F_ZEGARA/L_BODOW - 1 -- czas jednego bodu - liczba takt�w zegara
     );
     PORT (
         WORK : INOUT STD_LOGIC; -- sygnal czy komponent ma działać
@@ -25,9 +27,9 @@ ENTITY czekanie IS
         l_czasu : INOUT NATURAL RANGE 0 TO T; -- licznik czasu jednego bodu
         l_bitow : INOUT NATURAL RANGE 0 TO B_SLOWA - 1; -- licznik odebranych bitow danych lub stopu
         bufor : INOUT STD_LOGIC_VECTOR(B_SLOWA - 1 DOWNTO 0); -- rejestr kolejno odebranych bitow danych
-        problem : INOUT STD_LOGIC -- rejestr (flaga) wykrytego bledu odbioru
+        problem : INOUT STD_LOGIC; -- rejestr (flaga) wykrytego bledu odbioru
 
-        stan_start : OUT STD_LOGIC;
+        stan_start : OUT STD_LOGIC
 
     );
 END czekanie;
@@ -39,7 +41,7 @@ ARCHITECTURE behavioural OF czekanie IS
     --type     ETAP		is (CZEKANIE, START, DANA, PARZYSTOSC, STOP); -- lista etapow pracy odbiornika
     --signal   stan		:ETAP;					-- rejestr maszyny stanow odbiornika
 
-    CONSTANT T : POSITIVE := F_ZEGARA/L_BODOW - 1; -- czas jednego bodu - liczba taktów zegara
+    --CONSTANT T : POSITIVE := F_ZEGARA/L_BODOW - 1; -- czas jednego bodu - liczba taktów zegara
     --SIGNAL l_czasu : NATURAL RANGE 0 TO T; -- licznik czasu jednego bodu
     --SIGNAL l_bitow : NATURAL RANGE 0 TO B_SLOWA - 1; -- licznik odebranych bitow danych lub stopu
 
@@ -60,11 +62,11 @@ BEGIN
                 IF (wejscie(1) = '0' AND wejscie(0) = '1') THEN -- wykrycie poczatku bitu START
                     --stan <= START; -- przejscie do stanu START
                     stan_start <= '1';
-                    WORT <= '0';
+                    WORK <= '0';
                 END IF; -- zakonczenie instukcji warunkowej
 
-            END IF
-        END IF
+            END IF;
+        END IF;
     END PROCESS;
 
 END behavioural;

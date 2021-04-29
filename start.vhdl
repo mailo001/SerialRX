@@ -11,7 +11,9 @@ ENTITY start IS
     B_PARZYSTOSCI : NATURAL := 1; -- liczba bitow parzystosci (0-1)
     B_STOPOW : NATURAL := 2; -- liczba bitow stopu (1-2)
     N_RX : BOOLEAN := FALSE; -- negacja logiczna sygnalu szeregowego
-    N_SLOWO : BOOLEAN := FALSE -- negacja logiczna slowa danych
+    N_SLOWO : BOOLEAN := FALSE; -- negacja logiczna slowa danych
+    
+     T : POSITIVE := 2082 --F_ZEGARA/L_BODOW - 1 -- czas jednego bodu - liczba takt�w zegara
   );
   PORT (
     WORK : INOUT STD_LOGIC; -- sygnal czy komponent ma działać
@@ -25,7 +27,7 @@ ENTITY start IS
     l_czasu : INOUT NATURAL RANGE 0 TO T; -- licznik czasu jednego bodu
     problem : INOUT STD_LOGIC; -- rejestr (flaga) wykrytego bledu odbioru
 
-    stan_dana : OUT STD_LOGIC;
+    stan_dana : OUT STD_LOGIC
 
   );
 END start;
@@ -37,7 +39,7 @@ ARCHITECTURE behavioural OF start IS
   --type     ETAP		is (CZEKANIE, START, DANA, PARZYSTOSC, STOP); -- lista etapow pracy odbiornika
   --signal   stan		:ETAP;					-- rejestr maszyny stanow odbiornika
 
-  CONSTANT T : POSITIVE := F_ZEGARA/L_BODOW - 1; -- czas jednego bodu - liczba taktów zegara
+  --CONSTANT T : POSITIVE := F_ZEGARA/L_BODOW - 1; -- czas jednego bodu - liczba taktów zegara
   --signal   l_bitow  	:natural range 0 to B_SLOWA-1;		-- licznik odebranych bitow danych lub stopu
 
   --signal   bufor	:std_logic_vector(SLOWO'range);		-- rejestr kolejno odebranych bitow danych

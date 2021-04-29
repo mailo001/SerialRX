@@ -11,7 +11,9 @@ ENTITY serial_rx IS
     B_PARZYSTOSCI : NATURAL := 1; -- liczba bitow parzystosci (0-1)
     B_STOPOW : NATURAL := 2; -- liczba bitow stopu (1-2)
     N_RX : BOOLEAN := FALSE; -- negacja logiczna sygnalu szeregowego
-    N_SLOWO : BOOLEAN := FALSE -- negacja logiczna slowa danych
+    N_SLOWO : BOOLEAN := FALSE; -- negacja logiczna slowa danych
+    
+     T : POSITIVE := 2082 --F_ZEGARA/L_BODOW - 1 -- czas jednego bodu - liczba takt�w zegara
   );
   PORT (
     R : IN STD_LOGIC; -- sygnal resetowania
@@ -31,7 +33,7 @@ ARCHITECTURE behavioural OF serial_rx IS
   --TYPE ETAP IS (CZEKANIE, START, DANA, PARZYSTOSC, STOP); -- lista etapow pracy odbiornika
   --SIGNAL stan : ETAP; -- rejestr maszyny stanow odbiornika
 
-  CONSTANT T : POSITIVE := F_ZEGARA/L_BODOW - 1; -- czas jednego bodu - liczba taktów zegara
+  --CONSTANT T : POSITIVE := F_ZEGARA/L_BODOW - 1; -- czas jednego bodu - liczba taktów zegara
   SIGNAL l_czasu : NATURAL RANGE 0 TO T; -- licznik czasu jednego bodu
   SIGNAL l_bitow : NATURAL RANGE 0 TO B_SLOWA - 1; -- licznik odebranych bitow danych lub stopu
 
@@ -57,9 +59,9 @@ ARCHITECTURE behavioural OF serial_rx IS
       l_czasu : INOUT NATURAL RANGE 0 TO T; -- licznik czasu jednego bodu
       l_bitow : INOUT NATURAL RANGE 0 TO B_SLOWA - 1; -- licznik odebranych bitow danych lub stopu
       bufor : INOUT STD_LOGIC_VECTOR(B_SLOWA - 1 DOWNTO 0); -- rejestr kolejno odebranych bitow danych
-      problem : INOUT STD_LOGIC -- rejestr (flaga) wykrytego bledu odbioru
+      problem : INOUT STD_LOGIC; -- rejestr (flaga) wykrytego bledu odbioru
 
-      stan_start : OUT STD_LOGIC;
+      stan_start : OUT STD_LOGIC
     );
   END COMPONENT;
 
@@ -74,7 +76,7 @@ ARCHITECTURE behavioural OF serial_rx IS
       problem : INOUT STD_LOGIC; -- rejestr (flaga) wykrytego bledu odbioru
 
 
-      stan_dana : OUT STD_LOGIC;
+      stan_dana : OUT STD_LOGIC
     );
   END COMPONENT;
 
@@ -85,22 +87,51 @@ ARCHITECTURE behavioural OF serial_rx IS
         --RX : IN STD_LOGIC; -- odebrany sygnal szeregowy
       SLOWO : OUT STD_LOGIC_VECTOR(B_SLOWA - 1 DOWNTO 0); -- odebrane slowo danych
       GOTOWE : OUT STD_LOGIC; -- flaga potwierdzenia odbioru
-      BLAD : OUT STD_LOGIC -- flaga wykrycia bledu w odbiorze
+      BLAD : OUT STD_LOGIC; -- flaga wykrycia bledu w odbiorze
 
       wejscie : INOUT STD_LOGIC_VECTOR(0 TO 1); -- podwojny rejestr sygnalu RX
       l_czasu : INOUT NATURAL RANGE 0 TO T; -- licznik czasu jednego bodu
       l_bitow : INOUT NATURAL RANGE 0 TO B_SLOWA - 1; -- licznik odebranych bitow danych lub stopu
-      bufor : INOUT STD_LOGIC_VECTOR(SLOWO'RANGE); -- rejestr kolejno odebranych bitow danych
+      bufor : INOUT STD_LOGIC_VECTOR(B_SLOWA - 1 DOWNTO 0); -- rejestr kolejno odebranych bitow danych
       problem : INOUT STD_LOGIC; -- rejestr (flaga) wykrytego bledu odbioru
 
-      stan_czekanie : OUT STD_LOGIC;
+      stan_czekanie : OUT STD_LOGIC
+    );
+  END COMPONENT;
+
+  COMPONENT dana IS 
+    PORT (
+      WORK : INOUT STD_LOGIC; -- sygnal resetowania
+      C : IN STD_LOGIC; -- zegar taktujacy
+
+      wejscie : INOUT STD_LOGIC_VECTOR(0 TO 1); -- podwojny rejestr sygnalu RX
+      l_czasu : INOUT NATURAL RANGE 0 TO T; -- licznik czasu jednego bodu
+      l_bitow : INOUT NATURAL RANGE 0 TO B_SLOWA - 1; -- licznik odebranych bitow danych lub stopu
+      bufor : INOUT STD_LOGIC_VECTOR(B_SLOWA - 1 DOWNTO 0); -- rejestr kolejno odebranych bitow danych
+      
+      stan_parzystosc : OUT  STD_LOGIC;
+      stan_stop : OUT STD_LOGIC
+    );
+  END COMPONENT;
+
+  COMPONENT parzystosc IS 
+    PORT (
+      WORK : INOUT STD_LOGIC; -- sygnal resetowania
+      C : IN STD_LOGIC; -- zegar taktujacy
+
+      wejscie : INOUT STD_LOGIC_VECTOR(0 TO 1); -- podwojny rejestr sygnalu RX
+      l_czasu : INOUT NATURAL RANGE 0 TO T; -- licznik czasu jednego bodu
+      bufor : INOUT STD_LOGIC_VECTOR(B_SLOWA - 1 DOWNTO 0); -- rejestr kolejno odebranych bitow danych
+      problem : INOUT STD_LOGIC; -- rejestr (flaga) wykrytego bledu odbioru
+
+      stan_stop : OUT STD_LOGIC
     );
   END COMPONENT;
 
 
 BEGIN
 
-  c1: czekanie PORT MAP (
+  czekanie1: czekanie PORT MAP (
     WORK => stan_czekanie,
     C => component_clk, 
 
@@ -110,7 +141,7 @@ BEGIN
     bufor => bufor,
     problem => problem,
 
-    stan_start => stan_start,
+    stan_start => stan_start
   );
 
   start1: start PORT MAP (
@@ -139,14 +170,39 @@ BEGIN
     problem => problem,
 
     stan_czekanie => stan_czekanie
-  )
+  );
+
+  dana1: dana PORT MAP (
+    WORK => stan_dana,
+    C => component_clk, 
+
+    wejscie => wejscie,
+    l_czasu => l_czasu,
+    l_bitow => l_bitow,
+    bufor => bufor,
+    
+    stan_parzystosc => stan_parzystosc,
+    stan_stop => stan_stop
+  );
+
+  parzystosc1: parzystosc PORT MAP (
+    WORK => stan_stop,
+    C => component_clk, 
+
+    wejscie => wejscie,
+    l_czasu => l_czasu,
+    bufor => bufor,
+    problem => problem,
+
+    stan_stop => stan_stop
+  );
 
   PROCESS (R, C) IS -- proces odbiornika
   BEGIN -- cialo procesu odbiornika
 
     IF (R = '1') THEN -- asynchroniczna inicjalizacja rejestrow
       wejscie <= (OTHERS => '0'); -- wyzerowanie rejestru sygnalu RX
-      stan <= CZEKANIE; -- poczatkowy stan pracy odbiornika
+      --stan <= CZEKANIE; -- poczatkowy stan pracy odbiornika
       l_czasu <= 0; -- wyzerowanie licznika czasu bodu
       l_bitow <= 0; -- wyzerowanie licznika odebranych bitow
       bufor <= (OTHERS => '0'); -- wyzerowanie bufora bitow danych
@@ -176,7 +232,7 @@ BEGIN
       -- Odpowiednie przekierowanie do komponentów
 
       component_clk <= '1';
-      wait for 10 ns;
+      --wait for 10 ns;
       component_clk <= '0';
       
 
