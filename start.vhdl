@@ -14,23 +14,25 @@ ENTITY start IS
     N_SLOWO : BOOLEAN := FALSE -- negacja logiczna slowa danych
   );
   PORT (
-    WORK : IN STD_LOGIC; -- sygnal czy komponent ma działać
+    WORK : INOUT STD_LOGIC; -- sygnal czy komponent ma działać
     C : IN STD_LOGIC; -- zegar taktujacy
-    RX : IN STD_LOGIC; -- odebrany sygnal szeregowy
-    SLOWO : OUT STD_LOGIC_VECTOR(B_SLOWA - 1 DOWNTO 0); -- odebrane slowo danych
-    GOTOWE : OUT STD_LOGIC; -- flaga potwierdzenia odbioru
-    BLAD : OUT STD_LOGIC -- flaga wykrycia bledu w odbiorze
+    --RX : IN STD_LOGIC; -- odebrany sygnal szeregowy
+    --SLOWO : OUT STD_LOGIC_VECTOR(B_SLOWA - 1 DOWNTO 0); -- odebrane slowo danych
+    --GOTOWE : OUT STD_LOGIC; -- flaga potwierdzenia odbioru
+    --BLAD : OUT STD_LOGIC -- flaga wykrycia bledu w odbiorze
     
     wejscie : INOUT STD_LOGIC_VECTOR(0 TO 1); -- podwojny rejestr sygnalu RX
     l_czasu : INOUT NATURAL RANGE 0 TO T; -- licznik czasu jednego bodu
     problem : INOUT STD_LOGIC; -- rejestr (flaga) wykrytego bledu odbioru
+
+    stan_dana : OUT STD_LOGIC;
 
   );
 END start;
 
 ARCHITECTURE behavioural OF start IS
 
-  SIGNAL wejscie : STD_LOGIC_VECTOR(0 TO 1); -- podwojny rejestr sygnalu RX
+  --SIGNAL wejscie : STD_LOGIC_VECTOR(0 TO 1); -- podwojny rejestr sygnalu RX
 
   --type     ETAP		is (CZEKANIE, START, DANA, PARZYSTOSC, STOP); -- lista etapow pracy odbiornika
   --signal   stan		:ETAP;					-- rejestr maszyny stanow odbiornika
@@ -51,7 +53,9 @@ BEGIN
           l_czasu <= l_czasu + 1; -- zwiekszenie o 1 stanu licznika czasu
         ELSE -- zakonczenie odliczania czasu T/2
           l_czasu <= 0; -- wyzerowanie licznika czasu bodu
-          stan <= DANA; -- przejscie do stanu DANA
+          --stan <= DANA; -- przejscie do stanu DANA
+          stan_dana <= '1';
+          WORK <= '0';
           IF (wejscie(1) = '0') THEN -- badanie nieprawidlowego stanu bitu START
             problem <= '1'; -- ustawienie rejestru bledu odbioru
           END IF; -- zakonczenie instukcji warunkowej  

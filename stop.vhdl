@@ -14,9 +14,9 @@ ENTITY czekanie IS
         N_SLOWO : BOOLEAN := FALSE -- negacja logiczna slowa danych
     );
     PORT (
-        WORK : IN STD_LOGIC; -- sygnal czy dziala
+        WORK : INOUT STD_LOGIC; -- sygnal czy dziala
         C : IN STD_LOGIC; -- zegar taktujacy
-        RX : IN STD_LOGIC; -- odebrany sygnal szeregowy
+        --RX : IN STD_LOGIC; -- odebrany sygnal szeregowy
         SLOWO : OUT STD_LOGIC_VECTOR(B_SLOWA - 1 DOWNTO 0); -- odebrane slowo danych
         GOTOWE : OUT STD_LOGIC; -- flaga potwierdzenia odbioru
         BLAD : OUT STD_LOGIC -- flaga wykrycia bledu w odbiorze
@@ -26,6 +26,8 @@ ENTITY czekanie IS
         l_bitow : INOUT NATURAL RANGE 0 TO B_SLOWA - 1; -- licznik odebranych bitow danych lub stopu
         bufor : INOUT STD_LOGIC_VECTOR(SLOWO'RANGE); -- rejestr kolejno odebranych bitow danych
         problem : INOUT STD_LOGIC; -- rejestr (flaga) wykrytego bledu odbioru
+
+        stan_czekanie : OUT STD_LOGIC;
 
     );
 END czekanie;
@@ -73,7 +75,9 @@ BEGIN
                             SLOWO <= (OTHERS => '0'); -- wyzerowanie wyjscia danych
                             BLAD <= '1'; -- ustawienie na wyjsciu flagi bledu odbioru
                         END IF; -- zakonczenie instukcji warunkowej
-                        stan <= CZEKANIE; -- przejscie do stanu CZEKANIE
+                        --stan <= CZEKANIE; -- przejscie do stanu CZEKANIE
+                        stan_czekanie <= '1';
+                        WORK <= '0';
                     END IF; -- zakonczenie instukcji warunkowej 
 
                 END IF; -- zakonczenie instukcji warunkowej
