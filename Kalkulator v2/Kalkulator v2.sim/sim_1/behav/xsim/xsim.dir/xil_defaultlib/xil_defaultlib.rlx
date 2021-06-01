@@ -1,0 +1,8 @@
+0.6
+2018.1
+Apr  4 2018
+19:30:32
+C:/Users/milos/Documents/Studia/FPGA/Kalkulator/modifier.vhdl,1622571887,vhdl,C:/Users/milos/Documents/Studia/FPGA/Kalkulator/tb.vhdl,,,modifier,,,,,,,,
+C:/Users/milos/Documents/Studia/FPGA/Kalkulator/receiver.vhdl,1622571886,vhdl,C:/Users/milos/Documents/Studia/FPGA/Kalkulator/tb.vhdl,,,receiver,,,,,,,,
+C:/Users/milos/Documents/Studia/FPGA/Kalkulator/tb.vhdl,1622572980,vhdl,,,,receive_tb,,,,,,,,
+C:/Users/milos/Documents/Studia/FPGA/Kalkulator/transmitter.vhdl,1622572980,vhdl,C:/Users/milos/Documents/Studia/FPGA/Kalkulator/tb.vhdl,,,transmitter,,,,,,,,
